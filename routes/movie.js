@@ -2,17 +2,16 @@ var express = require('express');
 var request = require("request");
 var router = express.Router();
 
-/* GET users listing. */
-router.get('/', function(req, res, next) {
-  request('https://tv-v2.api-fetch.website/movies/1', function (err, response, body) {
+/* GET home page. */
+router.get('/:id', function(req, res, next) {
+  request('https://tv-v2.api-fetch.website/movie/' + req.params.id, function (err, response, body) {
       if(err) {
         console.log("err: " + err);
       } else {
-        var movies = new Object();
         if (body != '') {
-          movies["movie"] = JSON.parse(body);
+          var movie = JSON.parse(body);
           //console.log("json parsed, title: " + movies);
-          res.render("index", movies);
+          res.render("movie", movie);
         }
       }
   });

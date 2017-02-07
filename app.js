@@ -3,6 +3,7 @@ var path = require('path');
 var exphbs = require('express-handlebars');
 
 var index = require('./routes/index');
+var movie = require('./routes/movie');
 var users = require('./routes/users');
 
 var app = express();
@@ -13,8 +14,12 @@ app.set('view engine', 'hbs');
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/movies', express.static(path.join(__dirname, 'public')));
+app.use('/movie', express.static(path.join(__dirname, 'public')));
+
 
 app.use('/', index);
+//app.use('/movies', index);
+app.use('/movie', movie);
 app.use('/users', users);
 
 // catch 404 and forward to error handler
