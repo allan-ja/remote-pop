@@ -3,6 +3,8 @@ var path = require('path');
 var exphbs = require('express-handlebars');
 var bodyParser = require('body-parser');
 var request = require("request");
+var MongoClient = require('mongodb').MongoClient
+
 
 
 var app = express();
@@ -26,6 +28,24 @@ app.use('/', index);
 //app.use('/movies', index);
 app.use('/movie', movie);
 //app.use('/users', users); */
+
+/*** MongoDB parameters ***/
+var db;
+var mongodb_url = 'mongodb://localhost:27017/myproject';
+
+MongoClient.connect(mongodb_url, function(err, database) {
+  console.log("Connected correctly to server");
+  db = database;
+});
+
+var findDocuments = function(callback) {
+  // Get the documents collection
+ db.collection('download').collection.find({}).toArray(function(err, docs) {
+    console.log("Found the following records");
+    console.log(docs)
+    callback(docs);
+  });
+}
 
 /*** Router configuration */
 var router = express.Router();
@@ -54,7 +74,6 @@ router.get('/movies/:id', function(req, res, next) {
         if (body != '') {
           console.log(body);
           movies["movie"] = JSON.parse(body);
-          //console.log("json parsed, title: " + movies);
           res.render("index", movies);
         }
       }
@@ -76,9 +95,37 @@ router.get('/movie/:id', function(req, res, next) {
 });
 
 router.post('/download', function(req, res) {
-  console.log("Downloads id: " + req.body.id)
-  res.send("tagId is set to " + req.query.tagId);
-})
+  console.log("Downloads id: " + req.body.id);
+  MongoClient.connect(mongodb_url, function(err, db) {
+    console.log("Connected correctly to server");
+    db.collection('download').save(req.body, function(err, result) {
+      if (err) return console.log(err)
+      console.log('saved to database')
+      db.close();
+    });
+  });
+});
+
+router.get('/downloads',function(req,res){
+  console.log("get downloads server");
+  var json = [{title: 'Toy Story 2677'}];
+  //res.json(json)
+  MongoClient.connect(mongodb_url, function(err, db) {
+    if (err) {
+      console.log(err)
+    } else {
+      db.collection('download').find({}).toArray(function(err, movies) {
+        if(err){
+          console.log(err);
+        } else {
+          console.log("docs = " + JSON.stringify(movies));
+          db.close();
+          res.json(movies);
+        }
+      });
+    }
+  });
+});
 
 /*** END Router ***/
 

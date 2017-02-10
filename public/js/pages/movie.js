@@ -1,6 +1,6 @@
 $('#download-button').click(function(e) {
   var pathname = window.location.pathname.split('/');
-  var movie = {id : 'Deadpool', pathname: pathname[2]};
+  var movie = {title : 'Deadpool', pathname: pathname[2]};
   $.ajax({
   type: "POST",
   url: "/download",
