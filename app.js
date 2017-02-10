@@ -95,16 +95,33 @@ router.get('/movie/:id', function(req, res, next) {
 });
 
 router.post('/download', function(req, res) {
-  console.log("Downloads id: " + req.body.id);
+  console.log("Downloads id: " + JSON.stringify(req.body));
+  request('https://tv-v2.api-fetch.website/movie/' + req.body.id, function (err, response, body) {
+    //console.log("body= " + body);
+    var movie = JSON.parse(body);
+    MongoClient.connect(mongodb_url, function(err, db) {
+      console.log("Connected correctly to server");
+      db.collection('download').save(movie, function(err, result) {
+      if (err) return console.log(err)
+      console.log(movie.title + ' saved to database');
+      db.close();
+      });
+    });
+  });
+});
+
+/**
+router.post('/download', function(req, res) {
+  console.log("Downloads id: ");
   MongoClient.connect(mongodb_url, function(err, db) {
     console.log("Connected correctly to server");
     db.collection('download').save(req.body, function(err, result) {
       if (err) return console.log(err)
-      console.log('saved to database')
+      console.log(req.body.title + ' saved to database');
       db.close();
     });
   });
-});
+});**/
 
 router.get('/downloads',function(req,res){
   console.log("get downloads server");
@@ -118,7 +135,7 @@ router.get('/downloads',function(req,res){
         if(err){
           console.log(err);
         } else {
-          console.log("docs = " + JSON.stringify(movies));
+          //console.log("docs = " + JSON.stringify(movies));
           db.close();
           res.json(movies);
         }
