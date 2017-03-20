@@ -31,7 +31,7 @@ app.use('/movie', movie);
 
 /*** MongoDB parameters ***/
 var db;
-var mongodb_url = 'mongodb://localhost:27017/myproject';
+var mongodb_url = 'mongodb://localhost:27017/remotepop';
 
 MongoClient.connect(mongodb_url, function(err, database) {
   console.log("Connected correctly to server");
@@ -47,6 +47,14 @@ var findDocuments = function(callback) {
   });
 }
 
+var clearDownloads = function(){
+  MongoClient.connect(mongodb_url, function(err, db) {
+    console.log("Connected correctly to server");
+    db.collection('download').remove({});
+    console.log("downloads collection cleared");
+  });
+}
+clearDownloads();
 /*** Router configuration */
 var router = express.Router();
 
@@ -66,7 +74,8 @@ router.get("/movies", function(req,res) {
 router.get('/movies/:id', function(req, res, next) {
   console.log(req.params);
   var id = req.params !== '' ? req.params.id : 1;
-  request('https://tv-v2.api-fetch.website/movies/' + id, function (err, response, body) {
+  request('http://localhost:5000/movies/' + id, function (err, response, body) {
+  //request('http://localhost:5000/movies/' + id, function (err, response, body) {
       if(err) {
         console.log("err: " + err);
       } else {
@@ -81,7 +90,7 @@ router.get('/movies/:id', function(req, res, next) {
 });
 
 router.get('/movie/:id', function(req, res, next) {
-  request('https://tv-v2.api-fetch.website/movie/' + req.params.id, function (err, response, body) {
+  request('http://localhost:5000/movie/' + req.params.id, function (err, response, body) {
       if(err) {
         console.log("err: " + err);
       } else {
@@ -96,9 +105,12 @@ router.get('/movie/:id', function(req, res, next) {
 
 router.post('/download', function(req, res) {
   console.log("Downloads id: " + JSON.stringify(req.body));
-  request('https://tv-v2.api-fetch.website/movie/' + req.body.id, function (err, response, body) {
+  request('http://localhost:5000/movie/' +
+  //request('http://localhost:5000/movies/' +
+   req.body.id, function (err, response, body) {
     //console.log("body= " + body);
     var movie = JSON.parse(body);
+    console.log(body);
     MongoClient.connect(mongodb_url, function(err, db) {
       console.log("Connected correctly to server");
       db.collection('download').save(movie, function(err, result) {
