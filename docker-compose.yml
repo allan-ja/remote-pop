@@ -1,0 +1,19 @@
+version: "2"
+services:
+  web:
+    build: .
+    volumes:
+      - ./:/app
+    ports:
+      - "3040:3040"
+    links:
+      — mongo
+    mongo:
+      image: mongo
+      ports:
+        — “27017:27017”
+    mongodata:
+      image: tianon/true
+      volumes:
+        - /data/db
+      command: echo 'Data Container for Auth_MongoDB'
