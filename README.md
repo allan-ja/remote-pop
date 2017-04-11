@@ -1,2 +1,9 @@
 # remote-pop
-Remote Pop, create with fun
+Remote Pop, created with fun
+
+To install:
+Node JS
+mongodb
+npm install
+sudo npm install -g nodemon
+nodemon bin/www
