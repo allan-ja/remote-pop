@@ -4,6 +4,15 @@ var exphbs = require('express-handlebars');
 var bodyParser = require('body-parser');
 var request = require("request");
 var MongoClient = require('mongodb').MongoClient
+var logger = require('morgan');
+
+/* Package for login */
+const passport = require('passport');
+const mongoose = require('mongoose');
+const Account = require('./models/account');
+var LocalStrategy = require('passport-local').Strategy;
+var flash = require('connect-flash');
+var cookieParser = require('cookie-parser');
 
 
 
@@ -13,11 +22,23 @@ var app = express();
 app.engine('.hbs', exphbs({defaultLayout: 'main', extname: '.hbs'}));
 app.set('view engine', 'hbs');
 
+app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/movies', express.static(path.join(__dirname, 'public')));
 app.use('/movie', express.static(path.join(__dirname, 'public')));
+/*** For login ***/
+app.use(cookieParser());
+app.use(require('express-session')({
+    secret: 'keyboard cat',
+    resave: false,
+    saveUninitialized: false
+}));
+app.use(passport.initialize());
+app.use(flash());
+app.use(passport.session());
+
 
 /* Configure Router in spearates files
 var index = require('./routes/index');
@@ -54,6 +75,14 @@ var clearDownloads = function(){
   });
 }
 clearDownloads();
+
+/* passport config */
+passport.use(new LocalStrategy(Account.authenticate()));
+passport.serializeUser(Account.serializeUser());
+passport.deserializeUser(Account.deserializeUser());
+// mongoose
+mongoose.connect(mongodb_url);
+
 /*** Router configuration */
 var router = express.Router();
 
@@ -63,8 +92,24 @@ router.use(function (req,res,next) {
 });
 
 router.get("/", function(req,res) {
-  res.redirect('/movies/1')
+  res.redirect('/login')
+
 });
+
+/* Routes for login */
+router.get('/login', (req, res) => {
+    res.render('login', {layout: 'blank'});
+});
+
+router.post('/login', passport.authenticate('local', { failureRedirect: '/login', failureFlash: true }), (req, res, next) => {
+    req.session.save((err) => {
+        if (err) {
+            return next(err);
+        }
+        res.redirect('/movies');
+    });
+});
+/***/
 
 router.get("/movies", function(req,res) {
   res.redirect('/movies/1')
