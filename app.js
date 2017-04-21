@@ -87,7 +87,7 @@ mongoose.connect(mongodb_url);
 var router = express.Router();
 
 router.use(function (req,res,next) {
-  console.log("/" + req.method);
+  //console.log("/" + req.method);
   next();
 });
 
@@ -109,6 +109,31 @@ router.post('/login', passport.authenticate('local', { failureRedirect: '/login'
         res.redirect('/movies');
     });
 });
+router.get('/logout', (req, res, next) => {
+    req.logout();
+    req.session.save((err) => {
+        if (err) {
+            return next(err);
+        }
+        res.redirect('/');
+    });
+});
+router.post('/register', (req, res, next) => {
+    Account.register(new Account({ username : req.body.username }), req.body.password, (err, account) => {
+        if (err) {
+          return res.render('register', { error : err.message });
+        }
+
+        passport.authenticate('local')(req, res, () => {
+            req.session.save((err) => {
+                if (err) {
+                    return next(err);
+                }
+                res.redirect('/');
+            });
+        });
+    });
+});
 /***/
 
 router.get("/movies", function(req,res) {
@@ -125,8 +150,9 @@ router.get('/movies/:id', function(req, res, next) {
       } else {
         var movies = new Object();
         if (body != '') {
-          console.log(body);
+          //console.log(req.user.username);
           movies["movie"] = JSON.parse(body);
+          movies["username"] = req.user.username;
           res.render("index", movies);
         }
       }
