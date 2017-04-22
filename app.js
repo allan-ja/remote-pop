@@ -92,7 +92,7 @@ router.use(function (req,res,next) {
 });
 
 router.get("/", function(req,res) {
-  res.redirect('/login')
+  res.redirect('/movies')
 
 });
 
@@ -104,7 +104,7 @@ var isAuthenticated = function (req, res, next) {
 	if (req.isAuthenticated())
 		return next();
 	// if the user is not authenticated then redirect him to the login page
-	res.redirect('/');
+	res.redirect('/login');
 }
 router.get('/login', (req, res) => {
     res.render('login', {layout: 'blank'});
