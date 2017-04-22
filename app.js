@@ -97,6 +97,15 @@ router.get("/", function(req,res) {
 });
 
 /* Routes for login */
+var isAuthenticated = function (req, res, next) {
+	// if user is authenticated in the session, call the next() to call the next request handler
+	// Passport adds this method to request object. A middleware is allowed to add properties to
+	// request and response objects
+	if (req.isAuthenticated())
+		return next();
+	// if the user is not authenticated then redirect him to the login page
+	res.redirect('/');
+}
 router.get('/login', (req, res) => {
     res.render('login', {layout: 'blank'});
 });
@@ -140,7 +149,7 @@ router.get("/movies", function(req,res) {
   res.redirect('/movies/1')
 });
 
-router.get('/movies/:id', function(req, res, next) {
+router.get('/movies/:id', isAuthenticated, function(req, res, next) {
   console.log(req.params);
   var id = req.params !== '' ? req.params.id : 1;
   request(api.ip + '/movies/' + id, function (err, response, body) {
@@ -159,7 +168,7 @@ router.get('/movies/:id', function(req, res, next) {
   });
 });
 
-router.get('/movie/:id', function(req, res, next) {
+router.get('/movie/:id', isAuthenticated, function(req, res, next) {
   request(api.ip + '/movie/' + req.params.id, function (err, response, body) {
       if(err) {
         console.log("err: " + err);
