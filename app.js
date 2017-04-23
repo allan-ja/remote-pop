@@ -83,6 +83,7 @@ passport.deserializeUser(Account.deserializeUser());
 // mongoose
 mongoose.connect(mongodb_url);
 
+
 /*** Router configuration */
 var router = express.Router();
 
@@ -106,6 +107,27 @@ var isAuthenticated = function (req, res, next) {
 	// if the user is not authenticated then redirect him to the login page
 	res.redirect('/login');
 }
+var pages_layout = function(cur_page, callback){
+  request(api.ip + '/movies/', function (err, response, body) {
+      if(err) {
+        console.log("err: " + err);
+      } else {
+        list = JSON.parse(body);
+        var pages = new Array();
+        var start = 0;
+        var end = 5;
+        for(i = start; i < end; i++){
+          var page = new Object();
+          page["number"] = i+1;
+          page["link"] = list[i];
+          pages[i] = page
+        }
+
+        callback(pages);
+      }
+    })
+  }
+
 router.get('/login', (req, res) => {
     res.render('login', {layout: 'blank'});
 });
@@ -159,7 +181,7 @@ router.get('/movies/:id', isAuthenticated, function(req, res, next) {
       } else {
         var movies = new Object();
         if (body != '') {
-          //console.log(req.user.username);
+          pages_layout(1,console.log);
           movies["movie"] = JSON.parse(body);
           movies["username"] = req.user.username;
           res.render("index", movies);
@@ -176,6 +198,7 @@ router.get('/movie/:id', isAuthenticated, function(req, res, next) {
         if (body != '') {
           var movie = JSON.parse(body);
           //console.log("json parsed, title: " + movies);
+          movie["username"] = req.user.username;
           res.render("movie", movie);
         }
       }
