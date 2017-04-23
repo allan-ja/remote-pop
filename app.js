@@ -113,16 +113,27 @@ var pages_layout = function(cur_page, callback){
         console.log("err: " + err);
       } else {
         list = JSON.parse(body);
-        var pages = new Array();
-        var start = 0;
-        var end = 5;
+        //var start = 0;
+        var start = cur_page > 3 ? cur_page-2 : 1;
+        var end = start+5;
+        var numbers = [];
+        for(i = 1; i < 6;i++){
+
+        }
+        var pages = [];
+        console.log("Current page = " + cur_page);
         for(i = start; i < end; i++){
           var page = new Object();
-          page["number"] = i+1;
-          page["link"] = list[i];
-          pages[i] = page
+          page["number"] = i;
+//          page["link"] = list[i];
+          if(i === cur_page){
+            page["active"] = true;
+          } else {
+            page["active"] = false;
+          }
+          pages[i-1] = page
         }
-
+        console.log(JSON.stringify(pages));
         callback(pages);
       }
     })
@@ -181,10 +192,13 @@ router.get('/movies/:id', isAuthenticated, function(req, res, next) {
       } else {
         var movies = new Object();
         if (body != '') {
-          pages_layout(1,console.log);
-          movies["movie"] = JSON.parse(body);
-          movies["username"] = req.user.username;
-          res.render("index", movies);
+          pages_layout(parseInt(req.params.id), function(pages){
+            //movies["movie"] = JSON.parse(body);
+            movies["movie"] = new Array();
+            movies["username"] = req.user.username;
+            movies["page"] = pages;
+            res.render("index", movies);
+          });
         }
       }
   });
