@@ -115,30 +115,29 @@ var pages_layout = function(cur_page, callback){
         list = JSON.parse(body);
         //var start = 0;
         var start = cur_page > 3 ? cur_page-2 : 1;
-        var end = start+5;
-        var numbers = [];
-        for(i = 1; i < 6;i++){
+        var end = cur_page < list.length-3 ? start+5 : list.length+1;
 
-        }
         var pages = [];
-        console.log("Current page = " + cur_page);
         for(i = start; i < end; i++){
-          var page = new Object();
-          page["number"] = i;
-//          page["link"] = list[i];
-          if(i === cur_page){
-            page["active"] = true;
-          } else {
-            page["active"] = false;
-          }
-          pages[i-1] = page
+          pages.push(do_page(i, i, i===cur_page));
         }
+        if(cur_page < list.length-3){
+          pages.push(do_page('...', '', false));
+          pages.push(do_page(list.length, list.length, false));
+        }
+
         console.log(JSON.stringify(pages));
         callback(pages);
       }
     })
   }
-
+var do_page = function(number, link, active){
+  var page = new Object();
+  page["number"] = number;
+  page["link"] = link;
+  page["active"] = active;
+  return(page)
+}
 router.get('/login', (req, res) => {
     res.render('login', {layout: 'blank'});
 });
