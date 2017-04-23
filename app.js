@@ -83,6 +83,7 @@ passport.deserializeUser(Account.deserializeUser());
 // mongoose
 mongoose.connect(mongodb_url);
 
+
 /*** Router configuration */
 var router = express.Router();
 
@@ -92,11 +93,51 @@ router.use(function (req,res,next) {
 });
 
 router.get("/", function(req,res) {
-  res.redirect('/login')
+  res.redirect('/movies')
 
 });
 
 /* Routes for login */
+var isAuthenticated = function (req, res, next) {
+	// if user is authenticated in the session, call the next() to call the next request handler
+	// Passport adds this method to request object. A middleware is allowed to add properties to
+	// request and response objects
+	if (req.isAuthenticated())
+		return next();
+	// if the user is not authenticated then redirect him to the login page
+	res.redirect('/login');
+}
+var pages_layout = function(cur_page, callback){
+  request(api.ip + '/movies/', function (err, response, body) {
+      if(err) {
+        console.log("err: " + err);
+      } else {
+        list = JSON.parse(body);
+        //var start = 0;
+        var start = cur_page > 3 ? cur_page-2 : 1;
+        var end = cur_page < list.length-3 ? start+5 : list.length+1;
+
+        var pages = [];
+        for(i = start; i < end; i++){
+          pages.push(do_page(i, i, i===cur_page));
+        }
+        if(cur_page < list.length-3){
+          pages.push(do_page('...', '', false));
+          pages.push(do_page(list.length, list.length, false));
+        }
+
+        console.log(JSON.stringify(pages));
+        callback(pages, cur_page!==1, cur_page!==list.length);
+      }
+    })
+  }
+var do_page = function(number, link, active){
+  var page = new Object();
+  page["number"] = number;
+  page["link"] = link;
+  page["active"] = active;
+  return(page)
+}
 router.get('/login', (req, res) => {
     res.render('login', {layout: 'blank'});
 });
@@ -140,7 +181,7 @@ router.get("/movies", function(req,res) {
   res.redirect('/movies/1')
 });
 
-router.get('/movies/:id', function(req, res, next) {
+router.get('/movies/:id', isAuthenticated, function(req, res, next) {
   console.log(req.params);
   var id = req.params !== '' ? req.params.id : 1;
   request(api.ip + '/movies/' + id, function (err, response, body) {
@@ -150,16 +191,22 @@ router.get('/movies/:id', function(req, res, next) {
       } else {
         var movies = new Object();
         if (body != '') {
-          //console.log(req.user.username);
-          movies["movie"] = JSON.parse(body);
-          movies["username"] = req.user.username;
-          res.render("index", movies);
+          var current_page = parseInt(req.params.id);
+          pages_layout(current_page, function(pages, prev, next){
+            //movies["movie"] = JSON.parse(body);
+            movies["movie"] = [];
+            movies["username"] = req.user.username;
+            movies["page"] = pages;
+            if(prev) movies["prev"] = current_page-1;
+            if(next) movies["next"] = current_page+1;
+            res.render("index", movies);
+          });
         }
       }
   });
 });
 
-router.get('/movie/:id', function(req, res, next) {
+router.get('/movie/:id', isAuthenticated, function(req, res, next) {
   request(api.ip + '/movie/' + req.params.id, function (err, response, body) {
       if(err) {
         console.log("err: " + err);
@@ -167,6 +214,7 @@ router.get('/movie/:id', function(req, res, next) {
         if (body != '') {
           var movie = JSON.parse(body);
           //console.log("json parsed, title: " + movies);
+          movie["username"] = req.user.username;
           res.render("movie", movie);
         }
       }
