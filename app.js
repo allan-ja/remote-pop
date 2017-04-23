@@ -127,7 +127,7 @@ var pages_layout = function(cur_page, callback){
         }
 
         console.log(JSON.stringify(pages));
-        callback(pages);
+        callback(pages, cur_page!==1, cur_page!==list.length);
       }
     })
   }
@@ -191,11 +191,14 @@ router.get('/movies/:id', isAuthenticated, function(req, res, next) {
       } else {
         var movies = new Object();
         if (body != '') {
-          pages_layout(parseInt(req.params.id), function(pages){
+          var current_page = parseInt(req.params.id);
+          pages_layout(current_page, function(pages, prev, next){
             //movies["movie"] = JSON.parse(body);
-            movies["movie"] = new Array();
+            movies["movie"] = [];
             movies["username"] = req.user.username;
             movies["page"] = pages;
+            if(prev) movies["prev"] = current_page-1;
+            if(next) movies["next"] = current_page+1;
             res.render("index", movies);
           });
         }
