@@ -125,11 +125,10 @@ var pages_layout = function(cur_page, callback){
           pages.push(do_page('...', '', false));
           pages.push(do_page(list.length, list.length, false));
         }
-
-        console.log(JSON.stringify(pages));
+        //console.log(JSON.stringify(pages));
         callback(pages, cur_page!==1, cur_page!==list.length);
       }
-    })
+    });
   }
 var do_page = function(number, link, active){
   var page = new Object();
@@ -162,7 +161,7 @@ router.get('/logout', (req, res, next) => {
 router.post('/register', (req, res, next) => {
     Account.register(new Account({ username : req.body.username }), req.body.password, (err, account) => {
         if (err) {
-          return res.render('register', { error : err.message });
+          return res.render('register', {error : err.message });
         }
 
         passport.authenticate('local')(req, res, () => {
@@ -183,6 +182,29 @@ router.get("/movies", function(req,res) {
 
 router.get('/movies/:id', isAuthenticated, function(req, res, next) {
   console.log(req.params);
+  console.log("url:"+api.ip + '/movies/' + 1 + "?keywords=" + req.query.keywords);
+
+  /*if(req.query.keywords){
+    request(api.ip + '/movies/' + 1 + "?keywords=" + req.query.keywords, function (err, response, body) {
+    //request('http://localhost:5000/movies/' + id, function (err, response, body) {
+        if(err) {
+          console.log("err: " + err);
+        } else {
+          var movies = new Object();
+          console.log("body: " + body);
+          if (body !== '') {
+            movies["movie"] = JSON.parse(body);
+            //movies["movie"] = [];
+            movies["username"] = req.user.username;
+            res.render("index", movies);
+          }
+        }
+      });
+
+        }
+    });
+  }*/
+
   var id = req.params !== '' ? req.params.id : 1;
   request(api.ip + '/movies/' + id, function (err, response, body) {
   //request('http://localhost:5000/movies/' + id, function (err, response, body) {
@@ -193,8 +215,8 @@ router.get('/movies/:id', isAuthenticated, function(req, res, next) {
         if (body != '') {
           var current_page = parseInt(req.params.id);
           pages_layout(current_page, function(pages, prev, next){
-            //movies["movie"] = JSON.parse(body);
-            movies["movie"] = [];
+            movies["movie"] = JSON.parse(body);
+            //movies["movie"] = [];
             movies["username"] = req.user.username;
             movies["page"] = pages;
             if(prev) movies["prev"] = current_page-1;
