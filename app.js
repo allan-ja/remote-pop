@@ -235,8 +235,10 @@ router.get('/movie/:id', isAuthenticated, function(req, res, next) {
       } else {
         if (body != '') {
           var movie = JSON.parse(body);
-          //console.log("json parsed, title: " + movies);
+          var link = movie["trailer"].split("=");
+          //console.log("json parsed, youtube: " + link[1]);
           movie["username"] = req.user.username;
+          movie["youtube"] = link[1];
           res.render("movie", movie);
         }
       }
