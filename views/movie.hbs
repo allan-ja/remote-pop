@@ -14,21 +14,19 @@
 
         <!-- Portfolio Item Row -->
         <div class="row">
-            <div class="col-md-6">
-                <img id= "movie-poster" class="img-responsive" src={{images.poster}} alt="">
+          <div class="col-md-6">
+            <div style="position:relative;height:0;padding-bottom:56.25%">
+              <iframe src="https://www.youtube.com/embed/{{youtube}}?ecver=2" width="640" height="360" frameborder="0" style="position:absolute;width:100%;height:100%;left:0" allowfullscreen>
+              </iframe>
             </div>
+          </div>
             <div class="col-md-6">
                 <p>{{synopsis}}</p>
             </div>
             <div class="col-md-6">
               <button id="download-button">Download Movie</button>
             </div>
-            <div class="col-md-6">
-              <div style="position:relative;height:0;padding-bottom:56.25%">
-                <iframe src="https://www.youtube.com/embed/{{youtube}}?ecver=2" width="640" height="360" frameborder="0" style="position:absolute;width:100%;height:100%;left:0" allowfullscreen>
-                </iframe>
-              </div>
-            </div>
+
         </div>
         <!-- /.row -->
 
