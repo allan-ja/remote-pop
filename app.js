@@ -74,7 +74,7 @@ var clearDownloads = function(){
     console.log("downloads collection cleared");
   });
 }
-clearDownloads();
+//clearDownloads();
 
 /* passport config */
 passport.use(new LocalStrategy(Account.authenticate()));
