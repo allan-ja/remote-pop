@@ -52,6 +52,7 @@ app.use('/movie', movie);
 var api = require("./notshare/api.json");
 /*** MongoDB parameters ***/
 var mongodb_url = 'mongodb://localhost:27017/remotepop';
+var mongodb_url2 = 'mongodb://localhost:27017/popcorn';
 
 /* passport config */
 passport.use(new LocalStrategy(Account.authenticate()));
@@ -157,6 +158,61 @@ router.get("/movies", function(req,res) {
 });
 
 router.get('/movies/:id', isAuthenticated, function(req, res, next) {
+  MongoClient.connect(mongodb_url2, function(err, db) {
+    if (err) {
+      console.log(err)
+    } else {
+      db.collection('movies').find({}, {limit: 25}).toArray(function(err, body) {
+        if(err){
+          console.log(err);
+        } else {
+          //console.log("docs = " + JSON.stringify(movies));
+          db.close();
+          var movies = new Object();
+
+            var current_page = parseInt(req.params.id);
+            pages_layout(current_page, function(pages, prev, next){
+              movies["movie"] = body;
+              //movies["movie"] = [];
+              movies["username"] = req.user.username;
+              movies["page"] = pages;
+              if(prev) movies["prev"] = current_page-1;
+              if(next) movies["next"] = current_page+1;
+              res.render("index", movies);
+            });
+
+        }
+      });
+    }
+  });
+});
+
+router.get('/movie/:id', isAuthenticated, function(req, res, next) {
+  MongoClient.connect(mongodb_url2, function(err, db) {
+    if (err) {
+      console.log(err)
+    } else {
+      db.collection('movies').findOne({_id: req.params.id}, function(err, body) {
+        if(err){
+          console.log(err);
+        } else {
+          if (body != '') {
+            var movie = body;
+            console.log(JSON.stringify(body))
+            if (movie["trailer"] !== null) {
+              var link = movie["trailer"].split("=");
+              movie["youtube"] = link[1];
+            }
+            movie["username"] = req.user.username;
+            res.render("movie", movie);
+          }
+        }
+      });
+    }
+  });
+});
+
+/*router.get('/movies/:id', isAuthenticated, function(req, res, next) {
   console.log(req.params);
   console.log("url:"+api.ip + '/movies/' + 1 + "?keywords=" + req.query.keywords);
 
@@ -180,7 +236,7 @@ router.get('/movies/:id', isAuthenticated, function(req, res, next) {
         }
     });
   }*/
-
+/*
   var id = req.params !== '' ? req.params.id : 1;
   request(api.ip + '/movies/' + id, function (err, response, body) {
   //request('http://localhost:5000/movies/' + id, function (err, response, body) {
@@ -202,8 +258,8 @@ router.get('/movies/:id', isAuthenticated, function(req, res, next) {
         }
       }
   });
-});
-
+});*/
+/*
 router.get('/movie/:id', isAuthenticated, function(req, res, next) {
   request(api.ip + '/movie/' + req.params.id, function (err, response, body) {
       if(err) {
@@ -219,7 +275,7 @@ router.get('/movie/:id', isAuthenticated, function(req, res, next) {
         }
       }
   });
-});
+});*/
 
 router.post('/download', function(req, res) {
   //console.log("Downloads id: " + JSON.stringify(req.body));
