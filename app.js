@@ -53,29 +53,6 @@ var api = require("./notshare/api.json");
 /*** MongoDB parameters ***/
 var mongodb_url = 'mongodb://localhost:27017/remotepop';
 
-MongoClient.connect(mongodb_url, function(err, database) {
-  console.log("Connected correctly to server");
-  db = database;
-});
-
-var findDocuments = function(callback) {
-  // Get the documents collection
- db.collection('download').collection.find({}).toArray(function(err, docs) {
-    console.log("Found the following records");
-    console.log(docs)
-    callback(docs);
-  });
-}
-
-var clearDownloads = function(){
-  MongoClient.connect(mongodb_url, function(err, db) {
-    console.log("Connected correctly to server");
-    db.collection('download').remove({});
-    console.log("downloads collection cleared");
-  });
-}
-//clearDownloads();
-
 /* passport config */
 passport.use(new LocalStrategy(Account.authenticate()));
 passport.serializeUser(Account.serializeUser());
@@ -163,7 +140,6 @@ router.post('/register', (req, res, next) => {
         if (err) {
           return res.render('register', {error : err.message });
         }
-
         passport.authenticate('local')(req, res, () => {
             req.session.save((err) => {
                 if (err) {
@@ -246,15 +222,18 @@ router.get('/movie/:id', isAuthenticated, function(req, res, next) {
 });
 
 router.post('/download', function(req, res) {
-  console.log("Downloads id: " + JSON.stringify(req.body));
+  //console.log("Downloads id: " + JSON.stringify(req.body));
+  var ssn_user = req.session.passport.user;
   request(api.ip + '/movie/' +
   //request('http://localhost:5000/movies/' +
    req.body.id, function (err, response, body) {
     //console.log("body= " + body);
     var movie = JSON.parse(body);
-    console.log(body);
+    movie['user'] = ssn_user;
+    console.log(movie);
     MongoClient.connect(mongodb_url, function(err, db) {
-      console.log("Connected correctly to server");
+      //console.log("Connected correctly to server");
+
       db.collection('download').save(movie, function(err, result) {
       if (err) return console.log(err)
       console.log(movie.title + ' saved to database');
