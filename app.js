@@ -85,12 +85,9 @@ var isAuthenticated = function (req, res, next) {
 	// if the user is not authenticated then redirect him to the login page
 	res.redirect('/login');
 }
+
 var pages_layout = function(cur_page, callback){
-  request(api.ip + '/movies/', function (err, response, body) {
-      if(err) {
-        console.log("err: " + err);
-      } else {
-        list = JSON.parse(body);
+        list = [1,2,3,4];
         //var start = 0;
         var start = cur_page > 3 ? cur_page-2 : 1;
         var end = cur_page < list.length-3 ? start+5 : list.length+1;
@@ -105,9 +102,8 @@ var pages_layout = function(cur_page, callback){
         }
         //console.log(JSON.stringify(pages));
         callback(pages, cur_page!==1, cur_page!==list.length);
-      }
-    });
-  }
+}
+
 var do_page = function(number, link, active){
   var page = new Object();
   page["number"] = number;
@@ -162,7 +158,12 @@ router.get('/movies/:id', isAuthenticated, function(req, res, next) {
     if (err) {
       console.log(err)
     } else {
-      db.collection('movies').find({}, {limit: 25}).toArray(function(err, body) {
+      if(req.query.keywords){
+        var query = { $text: { $search: req.query.keywords }}
+      } else {
+          var query = {}
+      }
+      db.collection('movies').find(query, {limit: 50, sort:[['released' , 'desc']]}).toArray(function(err, body) {
         if(err){
           console.log(err);
         } else {
