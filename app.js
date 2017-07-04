@@ -85,8 +85,8 @@ var isAuthenticated = function (req, res, next) {
   return next();
   // if the user is not authenticated then redirect him to the login page
   /*** DISABLE AUTHENTIFICATION FOR DEV ***/
-  //res.redirect('/login');
-  return next();
+  res.redirect('/login');
+  //return next();
 }
 
 var pages_layout = function(current_page, count, callback){
