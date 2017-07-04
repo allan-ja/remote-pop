@@ -5,6 +5,7 @@ var bodyParser = require('body-parser');
 var request = require("request");
 var MongoClient = require('mongodb').MongoClient
 var logger = require('morgan');
+var assert = require('assert')
 
 /* Package for login */
 const passport = require('passport');
@@ -83,25 +84,25 @@ var isAuthenticated = function (req, res, next) {
 	if (req.isAuthenticated())
 		return next();
 	// if the user is not authenticated then redirect him to the login page
-	res.redirect('/login');
+  /*** DISABLE AUTHENTIFICATION FOR DEV ***/
+  //res.redirect('/login');
+  return next();
 }
 
-var pages_layout = function(cur_page, callback){
-        list = [1,2,3,4];
-        //var start = 0;
-        var start = cur_page > 3 ? cur_page-2 : 1;
-        var end = cur_page < list.length-3 ? start+5 : list.length+1;
+var pages_layout = function(cur_page, count, callback){
+  var start = cur_page > 3 ? cur_page-2 : 1;
+  var end = cur_page < count-3 ? start+5 : count +1;
 
-        var pages = [];
-        for(i = start; i < end; i++){
-          pages.push(do_page(i, i, i===cur_page));
-        }
-        if(cur_page < list.length-3){
-          pages.push(do_page('...', '', false));
-          pages.push(do_page(list.length, list.length, false));
-        }
-        //console.log(JSON.stringify(pages));
-        callback(pages, cur_page!==1, cur_page!==list.length);
+  var pages = [];
+  for(i = start; i < end; i++){
+    pages.push(do_page(i, i, i===cur_page));
+  }
+  if(cur_page < count-3){
+    pages.push(do_page('...', '', false));
+    pages.push(do_page(count, count, false));
+  }
+  //console.log(JSON.stringify(pages));
+  callback(pages, cur_page!==1, cur_page!==count);
 }
 
 var do_page = function(number, link, active){
@@ -163,24 +164,29 @@ router.get('/movies/:id', isAuthenticated, function(req, res, next) {
       } else {
           var query = {}
       }
-      db.collection('movies').find(query, {limit: 50, sort:[['released' , 'desc']]}).toArray(function(err, body) {
+      var current_page = parseInt(req.params.id);
+      var skip = (current_page - 1) * 50;
+      db.collection('movies').find(query, {limit: 50, skip: skip, sort:[['torrents.en.1080p.seed' , 'desc']]}).toArray(function(err, body) {
         if(err){
           console.log(err);
         } else {
-          //console.log("docs = " + JSON.stringify(movies));
-          db.close();
           var movies = new Object();
 
-            var current_page = parseInt(req.params.id);
-            pages_layout(current_page, function(pages, prev, next){
+          db.collection('movies').count(function(err, count){
+            assert.equal(null, err);
+            pages_layout(current_page, count, function(pages, prev, next){
               movies["movie"] = body;
-              //movies["movie"] = [];
-              movies["username"] = req.user.username;
+              // DISABLE FOR DEV
+              //movies["username"] = req.user.username;
+              movies["username"] = 'Jean-Pierre'
               movies["page"] = pages;
               if(prev) movies["prev"] = current_page-1;
               if(next) movies["next"] = current_page+1;
               res.render("index", movies);
+              db.close();
             });
+          });
+
 
         }
       });
@@ -212,71 +218,6 @@ router.get('/movie/:id', isAuthenticated, function(req, res, next) {
     }
   });
 });
-
-/*router.get('/movies/:id', isAuthenticated, function(req, res, next) {
-  console.log(req.params);
-  console.log("url:"+api.ip + '/movies/' + 1 + "?keywords=" + req.query.keywords);
-
-  /*if(req.query.keywords){
-    request(api.ip + '/movies/' + 1 + "?keywords=" + req.query.keywords, function (err, response, body) {
-    //request('http://localhost:5000/movies/' + id, function (err, response, body) {
-        if(err) {
-          console.log("err: " + err);
-        } else {
-          var movies = new Object();
-          console.log("body: " + body);
-          if (body !== '') {
-            movies["movie"] = JSON.parse(body);
-            //movies["movie"] = [];
-            movies["username"] = req.user.username;
-            res.render("index", movies);
-          }
-        }
-      });
-
-        }
-    });
-  }*/
-/*
-  var id = req.params !== '' ? req.params.id : 1;
-  request(api.ip + '/movies/' + id, function (err, response, body) {
-  //request('http://localhost:5000/movies/' + id, function (err, response, body) {
-      if(err) {
-        console.log("err: " + err);
-      } else {
-        var movies = new Object();
-        if (body != '') {
-          var current_page = parseInt(req.params.id);
-          pages_layout(current_page, function(pages, prev, next){
-            movies["movie"] = JSON.parse(body);
-            //movies["movie"] = [];
-            movies["username"] = req.user.username;
-            movies["page"] = pages;
-            if(prev) movies["prev"] = current_page-1;
-            if(next) movies["next"] = current_page+1;
-            res.render("index", movies);
-          });
-        }
-      }
-  });
-});*/
-/*
-router.get('/movie/:id', isAuthenticated, function(req, res, next) {
-  request(api.ip + '/movie/' + req.params.id, function (err, response, body) {
-      if(err) {
-        console.log("err: " + err);
-      } else {
-        if (body != '') {
-          var movie = JSON.parse(body);
-          var link = movie["trailer"].split("=");
-          //console.log("json parsed, youtube: " + link[1]);
-          movie["username"] = req.user.username;
-          movie["youtube"] = link[1];
-          res.render("movie", movie);
-        }
-      }
-  });
-});*/
 
 router.post('/download', function(req, res) {
   //console.log("Downloads id: " + JSON.stringify(req.body));
