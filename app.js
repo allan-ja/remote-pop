@@ -159,14 +159,18 @@ router.get('/movies/:id', isAuthenticated, function(req, res, next) {
     if (err) {
       console.log(err)
     } else {
+      var current_page = parseInt(req.params.id);
+
       if(req.query.keywords){
         var query = { $text: { $search: req.query.keywords }}
+        var options = {limit: 50, sort:[['torrents.en.1080p.seed' , 'desc']]};
       } else {
-          var query = {}
+        var skip = (current_page - 1) * 50;
+        var query = {}
+        var options = {limit: 50, skip: skip,sort:[['torrents.en.1080p.seed' , 'desc']]};
       }
-      var current_page = parseInt(req.params.id);
-      var skip = (current_page - 1) * 50;
-      db.collection('movies').find(query, {limit: 50, skip: skip, sort:[['torrents.en.1080p.seed' , 'desc']]}).toArray(function(err, body) {
+
+      db.collection('movies').find(query, options).toArray(function(err, body) {
         if(err){
           console.log(err);
         } else {
@@ -210,7 +214,9 @@ router.get('/movie/:id', isAuthenticated, function(req, res, next) {
               var link = movie["trailer"].split("=");
               movie["youtube"] = link[1];
             }
-            movie["username"] = req.user.username;
+            // DISABLE FOR DEV
+            //movie["username"] = req.user.username;
+            movie["username"] = 'Jean-Pierre'
             res.render("movie", movie);
           }
         }
