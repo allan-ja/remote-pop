@@ -32,9 +32,9 @@ app.use('/movie', express.static(path.join(__dirname, 'public')));
 /*** For login ***/
 app.use(cookieParser());
 app.use(require('express-session')({
-    secret: 'keyboard cat',
-    resave: false,
-    saveUninitialized: false
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: false
 }));
 app.use(passport.initialize());
 app.use(flash());
@@ -78,75 +78,75 @@ router.get("/", function(req,res) {
 
 /* Routes for login */
 var isAuthenticated = function (req, res, next) {
-	// if user is authenticated in the session, call the next() to call the next request handler
-	// Passport adds this method to request object. A middleware is allowed to add properties to
-	// request and response objects
-	if (req.isAuthenticated())
-		return next();
-	// if the user is not authenticated then redirect him to the login page
+  // if user is authenticated in the session, call the next() to call the next request handler
+  // Passport adds this method to request object. A middleware is allowed to add properties to
+  // request and response objects
+  if (req.isAuthenticated())
+  return next();
+  // if the user is not authenticated then redirect him to the login page
   /*** DISABLE AUTHENTIFICATION FOR DEV ***/
   //res.redirect('/login');
   return next();
 }
 
-var pages_layout = function(cur_page, count, callback){
-  var start = cur_page > 3 ? cur_page-2 : 1;
-  var end = cur_page < count-3 ? start+5 : count +1;
+var pages_layout = function(current_page, count, callback){
+  var start = current_page > 3 ? current_page-2 : 1;
+  var end = current_page < count-3 ? start+5 : count +1;
 
   var pages = [];
   for(i = start; i < end; i++){
-    pages.push(do_page(i, i, i===cur_page));
+    pages.push(do_page_button(i, i, i===current_page));
   }
-  if(cur_page < count-3){
-    pages.push(do_page('...', '', false));
-    pages.push(do_page(count, count, false));
+  if(current_page < count-3){
+    pages.push(do_page_button('...', current_page, false));
+    pages.push(do_page_button(count, count, false));
   }
-  //console.log(JSON.stringify(pages));
-  callback(pages, cur_page!==1, cur_page!==count);
+  callback(pages, current_page!==1, current_page!==count);
 }
 
-var do_page = function(number, link, active){
+var do_page_button = function(number, link, active){
   var page = new Object();
   page["number"] = number;
   page["link"] = link;
   page["active"] = active;
   return(page)
 }
+
 router.get('/login', (req, res) => {
-    res.render('login', {layout: 'blank'});
+  res.render('login', {layout: 'blank'});
 });
 
 router.post('/login', passport.authenticate('local', { failureRedirect: '/login', failureFlash: true }), (req, res, next) => {
-    req.session.save((err) => {
-        if (err) {
-            return next(err);
-        }
-        res.redirect('/movies');
-    });
+  req.session.save((err) => {
+    if (err) {
+      return next(err);
+    }
+    res.redirect('/movies');
+  });
 });
 router.get('/logout', (req, res, next) => {
-    req.logout();
-    req.session.save((err) => {
-        if (err) {
-            return next(err);
-        }
-        res.redirect('/');
-    });
+  req.logout();
+  req.session.save((err) => {
+    if (err) {
+      return next(err);
+    }
+    res.redirect('/');
+  });
 });
 router.post('/register', (req, res, next) => {
-    Account.register(new Account({ username : req.body.username }), req.body.password, (err, account) => {
+  Account.register(new Account({ username : req.body.username }), req.body.password, (err, account) => {
+    if (err) {
+      return res.render('register', {error : err.message });
+    }
+    passport.authenticate('local')(req, res, () => {
+      req.session.save((err) => {
         if (err) {
-          return res.render('register', {error : err.message });
+          return next(err);
         }
-        passport.authenticate('local')(req, res, () => {
-            req.session.save((err) => {
-                if (err) {
-                    return next(err);
-                }
-                res.redirect('/');
-            });
-        });
+        res.redirect('/');
+      });
     });
+  });
 });
 /***/
 
@@ -156,72 +156,55 @@ router.get("/movies", function(req,res) {
 
 router.get('/movies/:id', isAuthenticated, function(req, res, next) {
   MongoClient.connect(mongodb_url2, function(err, db) {
-    if (err) {
-      console.log(err)
+    assert.equal(null, err);
+    var current_page = parseInt(req.params.id);
+
+    if(req.query.keywords){
+      var query = { $text: { $search: req.query.keywords }}
+      var options = {limit: 50, sort:[['torrents.en.1080p.seed' , 'desc']]};
     } else {
-      var current_page = parseInt(req.params.id);
-
-      if(req.query.keywords){
-        var query = { $text: { $search: req.query.keywords }}
-        var options = {limit: 50, sort:[['torrents.en.1080p.seed' , 'desc']]};
-      } else {
-        var skip = (current_page - 1) * 50;
-        var query = {}
-        var options = {limit: 50, skip: skip,sort:[['torrents.en.1080p.seed' , 'desc']]};
-      }
-
-      db.collection('movies').find(query, options).toArray(function(err, body) {
-        if(err){
-          console.log(err);
-        } else {
-          var movies = new Object();
-
-          db.collection('movies').count(function(err, count){
-            assert.equal(null, err);
-            pages_layout(current_page, count, function(pages, prev, next){
-              movies["movie"] = body;
-              // DISABLE FOR DEV
-              //movies["username"] = req.user.username;
-              movies["username"] = 'Jean-Pierre'
-              movies["page"] = pages;
-              if(prev) movies["prev"] = current_page-1;
-              if(next) movies["next"] = current_page+1;
-              res.render("index", movies);
-              db.close();
-            });
-          });
-
-
-        }
-      });
+      var skip = (current_page - 1) * 50;
+      var query = {}
+      var options = {limit: 50, skip: skip,sort:[['torrents.en.1080p.seed' , 'desc']]};
     }
+
+    db.collection('movies').find(query, options).toArray(function(err, body) {
+      assert.equal(null, err);
+      var movies = new Object();
+      db.collection('movies').count(function(err, count){
+        assert.equal(null, err);
+        pages_layout(current_page, count, function(pages, prev, next){
+          movies["movie"] = body;
+          // DISABLE FOR DEV
+          //movies["username"] = req.user.username;
+          movies["username"] = 'Jean-Pierre'
+          movies["page"] = pages;
+          if(prev) movies["prev"] = current_page-1;
+          if(next) movies["next"] = current_page+1;
+          res.render("index", movies);
+          db.close();
+        });
+      });
+    });
   });
 });
 
 router.get('/movie/:id', isAuthenticated, function(req, res, next) {
   MongoClient.connect(mongodb_url2, function(err, db) {
-    if (err) {
-      console.log(err)
-    } else {
-      db.collection('movies').findOne({_id: req.params.id}, function(err, body) {
-        if(err){
-          console.log(err);
-        } else {
-          if (body != '') {
-            var movie = body;
-            console.log(JSON.stringify(body))
-            if (movie["trailer"] !== null) {
-              var link = movie["trailer"].split("=");
-              movie["youtube"] = link[1];
-            }
-            // DISABLE FOR DEV
-            //movie["username"] = req.user.username;
-            movie["username"] = 'Jean-Pierre'
-            res.render("movie", movie);
-          }
-        }
-      });
-    }
+    assert.equal(null, err);
+    db.collection('movies').findOne({_id: req.params.id}, function(err, body) {
+      assert.notEqual('', body);
+      var movie = body;
+      console.log(JSON.stringify(body))
+      if (movie["trailer"] !== null) {
+        var link = movie["trailer"].split("=");
+        movie["youtube"] = link[1];
+      }
+      // DISABLE FOR DEV
+      //movie["username"] = req.user.username;
+      movie["username"] = 'Jean-Pierre'
+      res.render("movie", movie);
+    });
   });
 });
 
@@ -230,54 +213,32 @@ router.post('/download', function(req, res) {
   var ssn_user = req.session.passport.user;
   request(api.ip + '/movie/' +
   //request('http://localhost:5000/movies/' +
-   req.body.id, function (err, response, body) {
+  req.body.id, function (err, response, body) {
     //console.log("body= " + body);
     var movie = JSON.parse(body);
     movie['user'] = ssn_user;
     console.log(movie);
     MongoClient.connect(mongodb_url, function(err, db) {
-      //console.log("Connected correctly to server");
-
       db.collection('download').save(movie, function(err, result) {
-      if (err) return console.log(err)
-      console.log(movie.title + ' saved to database');
-      db.close();
+        assert.equal(null, err);
+        console.log(movie.title + ' saved to database');
+        db.close();
       });
     });
   });
 });
-
-/**
-router.post('/download', function(req, res) {
-  console.log("Downloads id: ");
-  MongoClient.connect(mongodb_url, function(err, db) {
-    console.log("Connected correctly to server");
-    db.collection('download').save(req.body, function(err, result) {
-      if (err) return console.log(err)
-      console.log(req.body.title + ' saved to database');
-      db.close();
-    });
-  });
-});**/
 
 router.get('/downloads',function(req,res){
   console.log("get downloads server");
   var json = [{title: 'Toy Story 2677'}];
   //res.json(json)
   MongoClient.connect(mongodb_url, function(err, db) {
-    if (err) {
-      console.log(err)
-    } else {
-      db.collection('download').find({}).toArray(function(err, movies) {
-        if(err){
-          console.log(err);
-        } else {
-          //console.log("docs = " + JSON.stringify(movies));
-          db.close();
-          res.json(movies);
-        }
-      });
-    }
+    assert.equal(null, err);
+    db.collection('download').find({}).toArray(function(err, movies) {
+      assert.equal(null, err);
+        db.close();
+        res.json(movies);
+    });
   });
 });
 
