@@ -1,3 +1,5 @@
+var MongoClient = require('mongodb').MongoClient
+
 var mongodb_url = 'mongodb://localhost:27017/remotepop';
 
 exports.db = function(callback){
