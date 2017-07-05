@@ -11,6 +11,7 @@ body {
 
 .portfolio-item {
     margin-bottom: 25px;
+    //height: 426.75px
 }
 
 footer {
@@ -18,5 +19,5 @@ footer {
 }
 
 .title-movie {
-  height: auto
+  //height: 78px
 }

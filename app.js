@@ -52,16 +52,20 @@ app.use('/movie', movie);
 //app.use('/users', users); */
 var api = require("./notshare/api.json");
 /*** MongoDB parameters ***/
-var mongodb_url = 'mongodb://localhost:27017/remotepop';
-var mongodb_url2 = 'mongodb://localhost:27017/popcorn';
+var mongoServer = 'mongodb://localhost:27017/'
+var remoteDB = mongoServer + 'remotepop';
+var apiDB = mongoServer + 'popcorn';
 
 /* passport config */
 passport.use(new LocalStrategy(Account.authenticate()));
 passport.serializeUser(Account.serializeUser());
 passport.deserializeUser(Account.deserializeUser());
 // mongoose
-mongoose.connect(mongodb_url);
+mongoose.connect(remoteDB);
 
+/*** Uncomment to clear remoteDB ***/
+//var libDB = require('./db.js');
+//libDB.clearDownloads();
 
 /*** Router configuration */
 var router = express.Router();
@@ -88,7 +92,7 @@ var isAuthenticated = function (req, res, next) {
   res.redirect('/login');
   //return next();
 }
-
+var items_per_pages = 52;
 var pages_layout = function(current_page, count, callback){
   var start = current_page > 3 ? current_page-2 : 1;
   var end = current_page < count-3 ? start+5 : count +1;
@@ -155,17 +159,17 @@ router.get("/movies", function(req,res) {
 });
 
 router.get('/movies/:id', isAuthenticated, function(req, res, next) {
-  MongoClient.connect(mongodb_url2, function(err, db) {
+  MongoClient.connect(apiDB, function(err, db) {
     assert.equal(null, err);
     var current_page = parseInt(req.params.id);
 
     if(req.query.keywords){
       var query = { $text: { $search: req.query.keywords }}
-      var options = {limit: 50, sort:[['torrents.en.1080p.seed' , 'desc']]};
+      var options = {limit: items_per_pages, sort:[['torrents.en.1080p.seed' , 'desc']]};
     } else {
-      var skip = (current_page - 1) * 50;
+      var skip = (current_page - 1) * items_per_pages;
       var query = {}
-      var options = {limit: 50, skip: skip,sort:[['torrents.en.1080p.seed' , 'desc']]};
+      var options = {limit: items_per_pages, skip: skip,sort:[['torrents.en.1080p.seed' , 'desc']]};
     }
 
     db.collection('movies').find(query, options).toArray(function(err, body) {
@@ -190,7 +194,7 @@ router.get('/movies/:id', isAuthenticated, function(req, res, next) {
 });
 
 router.get('/movie/:id', isAuthenticated, function(req, res, next) {
-  MongoClient.connect(mongodb_url2, function(err, db) {
+  MongoClient.connect(apiDB, function(err, db) {
     assert.equal(null, err);
     db.collection('movies').findOne({_id: req.params.id}, function(err, body) {
       assert.notEqual('', body);
@@ -208,31 +212,20 @@ router.get('/movie/:id', isAuthenticated, function(req, res, next) {
   });
 });
 
-router.post('/download', function(req, res) {
-  //console.log("Downloads id: " + JSON.stringify(req.body));
-  var ssn_user = req.session.passport.user;
-  request(api.ip + '/movie/' +
-  //request('http://localhost:5000/movies/' +
-  req.body.id, function (err, response, body) {
-    //console.log("body= " + body);
-    var movie = JSON.parse(body);
-    movie['user'] = ssn_user;
-    console.log(movie);
-    MongoClient.connect(mongodb_url, function(err, db) {
-      db.collection('download').save(movie, function(err, result) {
-        assert.equal(null, err);
-        console.log(movie.title + ' saved to database');
-        db.close();
-      });
+router.post('/download', isAuthenticated, function(req, res) {
+  var ssnUser = req.session.passport.user;
+  var movieId = req.body.id
+  MongoClient.connect(remoteDB, function(err, db) {
+    db.collection('download').save({username: ssnUser, movie_id: movieId}, function(err, result) {
+      assert.equal(null, err);
+      console.log(movieId + ' saved to database');
+      db.close();
     });
   });
 });
 
-router.get('/downloads',function(req,res){
-  console.log("get downloads server");
-  var json = [{title: 'Toy Story 2677'}];
-  //res.json(json)
-  MongoClient.connect(mongodb_url, function(err, db) {
+router.get('/downloads', isAuthenticated, function(req,res){
+  MongoClient.connect(remoteDB, function(err, db) {
     assert.equal(null, err);
     db.collection('download').find({}).toArray(function(err, movies) {
       assert.equal(null, err);
