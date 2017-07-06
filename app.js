@@ -5,7 +5,8 @@ var bodyParser = require('body-parser');
 var request = require("request");
 var MongoClient = require('mongodb').MongoClient
 var logger = require('morgan');
-var assert = require('assert')
+var assert = require('assert');
+var dialog = require('dialog');
 
 /* Package for login */
 const passport = require('passport');
@@ -215,17 +216,17 @@ router.get('/movie/:id', isAuthenticated, function(req, res, next) {
 router.post('/download', isAuthenticated, function(req, res) {
   var ssnUser = req.session.passport.user;
   var movieId = req.body.id
-  MongoClient.connect(remoteDB, function(err, db) {
-    db.collection('download').save({username: ssnUser, movie_id: movieId}, function(err, result) {
+  MongoClient.connect(apiDB, function(err, db) {
+    db.collection('download').save({username: ssnUser, movie_id: movieId, date: new Date()}, function(err, result) {
       assert.equal(null, err);
-      console.log(movieId + ' saved to database');
+      dialog.info('Donwload saved');
       db.close();
     });
   });
 });
 
 router.get('/downloads', isAuthenticated, function(req,res){
-  MongoClient.connect(remoteDB, function(err, db) {
+  MongoClient.connect(apiDB, function(err, db) {
     assert.equal(null, err);
     db.collection('download').find({}).toArray(function(err, movies) {
       assert.equal(null, err);
